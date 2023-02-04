@@ -1,0 +1,71 @@
+import requests
+import win10toast
+import time
+import smtplib
+from email.mime.text import MIMEText
+
+def check_inventory(item_id):
+    # Define the URL of the Walmart product page with the given item ID
+    URL = "https://www.walmart.com/product/" + item_id
+
+    # Make a request to the URL
+    page = requests.get(URL)
+
+    # Check if the request was successful
+    if page.status_code == 200:
+        # Check if the text "Out of Stock" is on the page
+        if "Out of Stock" in page.text:
+            return "Out of Stock"
+        else:
+            return "In Stock"
+    else:
+        return "Error: Could not retrieve page."
+
+# Read the item IDs from the file "ItemList.txt"
+with open("ItemList.txt") as f:
+    item_ids = f.readlines()
+
+# Strip the newline characters from each item ID
+item_ids = [x.strip() for x in item_ids]
+
+# Read the email login information from the file "Emailinfo"
+with open("Emailinfo.txt") as f:
+    email_info = f.readlines()
+
+# Strip the newline characters from the email login information
+email_info = [x.strip() for x in email_info]
+
+# Extract the email address and password from the email login information
+email_address = email_info[0]
+email_password = email_info[1]
+
+# Check if the PC is idle
+def is_pc_idle():
+    return win32api.GetTickCount() - win32api.GetLastInputInfo() > 60000
+
+# Function to send an email notification
+def send_email(item_id):
+    server = smtplib.SMTP("smtp.gmail.com", 587)
+    server.ehlo()
+    server.starttls()
+    server.ehlo()
+    server.login(email_address, email_password)
+    message = MIMEText(f"Item ID {item_id} is now in stock.")
+    server.sendmail(email_address, "receipient@example.com", message.as_string())
+    server.quit()
+
+# Function to display a desktop notification
+def show_notification(item_id):
+    toaster = win10toast.ToastNotifier()
+    toaster.show_toast("Walmart Item Availability", f"Item ID {item_id} is now in stock.", duration=10)
+
+# Check the inventory of each item
+while True:
+    for item_id in item_ids:
+        inventory = check_inventory(item_id)
+        if inventory == "In Stock":
+            if is_pc_idle():
+                send_email(item_id)
+            else:
+                show_notification(item_id)
+    time.sleep(3600) # Wait for an hour before checking again
