@@ -4,9 +4,19 @@ import time
 import smtplib
 from email.mime.text import MIMEText
 
-def check_inventory(item_id):
-    # Define the URL of the Walmart product page with the given item ID
-    URL = "https://www.walmart.com/product/" + item_id
+def check_inventory():
+    # Open the file with the list of items to track
+    with open("Itemlist.txt") as f:
+        # Read the contents of the file
+        item_ids = f.readlines()
+        
+    # Remove the newline character from each item ID
+    item_ids = [x.strip() for x in item_ids]
+    
+    # Loop through each item ID
+    for item_id in item_ids:
+        # Define the URL of the Walmart product page with the given item ID
+        URL = "https://www.walmart.com/product/" + item_id
 
     # Make a request to the URL
     page = requests.get(URL)
